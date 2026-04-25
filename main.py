@@ -1,947 +1,275 @@
-{
-  "cells": [
-    {
-      "cell_type": "markdown",
-      "metadata": {
-        "id": "VeLyr3QqBquN"
-      },
-      "source": [
-        "## Introduction\n",
-        "\n",
-        "In this lab assessment, you'll practice your knowledge of JOIN statements and subqueries, using various types of joins and various methods for specifying the links between them. One of the main benefits of using a relational database is the table relations that define them which allow you to access and connect data together via shared columns. By writing more advanced SQL queries that utilize joins and subqueries you can provide a deeper and more granular level of analysis and data retrieval.\n",
-        "\n",
-        "This assessment will continue looking at the familiar Northwind database that contains customer relationship management (CRM) data as well as employee and product data. You will take a deeper dive into this database in order to accomplish more advanced SQL queries that require you to access data from multiple tables at once. \n",
-        "\n",
-        "Imagine that you are working in an analyst role for the sales rep team. They have collaborated with the customer relations and the product teams to take a comprehensive look at the employee to customer pipeline in an attempt to find areas of improvement and potential growth. You have been asked to provide some specific data and statistics regarding this project."
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {
-        "id": "8jkbDVuOB5AH"
-      },
-      "source": [
-        "## Learning Objectives\n",
-        "\n",
-        "You will be able to:\n",
-        "\n",
-        "* Write SQL queries that make use of various types of joins\n",
-        "* Choose and perform whichever type of join is best for retrieving desired data\n",
-        "* Write subqueries to decompose complex queries"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {
-        "id": "c0hBOncDCN6Y"
-      },
-      "source": [
-        "## Database\n",
-        "\n",
-        "The database will be the customer relationship management (CRM) database, which has the following ERD.\n",
-        "\n",
-        "![Database-Schema.png](ERD.png)\n",
-        "\n",
-        "### Connect to the database\n",
-        "\n",
-        "In the cell below we have provided the code to import both pandas and sqlite3 as well as define and create the connection to the database you will use. Also displayed is the schema and table names from the database. Use this information in conjunction with the ERD image above to assist in creating your SQL Queries.\n",
-        "\n",
-        "Major Hint: Look for the shared columns across tables you need to 'join' together."
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 40,
-      "metadata": {
-        "colab": {
-          "base_uri": "https://localhost:8080/",
-          "height": 771
-        },
-        "id": "oWsp6tECDSTB",
-        "outputId": "9193fd49-c951-4056-8c0e-b4f9867fbc81"
-      },
-      "outputs": [
-        {
-          "data": {
-            "application/vnd.microsoft.datawrangler.viewer.v0+json": {
-              "columns": [
-                {
-                  "name": "index",
-                  "rawType": "int64",
-                  "type": "integer"
-                },
-                {
-                  "name": "type",
-                  "rawType": "object",
-                  "type": "string"
-                },
-                {
-                  "name": "name",
-                  "rawType": "object",
-                  "type": "string"
-                },
-                {
-                  "name": "tbl_name",
-                  "rawType": "object",
-                  "type": "string"
-                },
-                {
-                  "name": "rootpage",
-                  "rawType": "int64",
-                  "type": "integer"
-                },
-                {
-                  "name": "sql",
-                  "rawType": "object",
-                  "type": "string"
-                }
-              ],
-              "ref": "80b5a1ba-5364-4c1e-a505-ec92a5f4e2c9",
-              "rows": [
-                [
-                  "0",
-                  "table",
-                  "orderdetails",
-                  "orderdetails",
-                  "2",
-                  "CREATE TABLE `orderdetails` (`orderNumber`, `productCode`, `quantityOrdered`, `priceEach`, `orderLineNumber`)"
-                ],
-                [
-                  "1",
-                  "table",
-                  "payments",
-                  "payments",
-                  "28",
-                  "CREATE TABLE `payments` (`customerNumber`, `checkNumber`, `paymentDate`, `amount`)"
-                ],
-                [
-                  "2",
-                  "table",
-                  "offices",
-                  "offices",
-                  "32",
-                  "CREATE TABLE `offices` (`officeCode`, `city`, `phone`, `addressLine1`, `addressLine2`, `state`, `country`, `postalCode`, `territory`)"
-                ],
-                [
-                  "3",
-                  "table",
-                  "customers",
-                  "customers",
-                  "33",
-                  "CREATE TABLE `customers` (`customerNumber`, `customerName`, `contactLastName`, `contactFirstName`, `phone`, `addressLine1`, `addressLine2`, `city`, `state`, `postalCode`, `country`, `salesRepEmployeeNumber`, `creditLimit`)"
-                ],
-                [
-                  "4",
-                  "table",
-                  "orders",
-                  "orders",
-                  "38",
-                  "CREATE TABLE `orders` (`orderNumber`, `orderDate`, `requiredDate`, `shippedDate`, `status`, `comments`, `customerNumber`)"
-                ],
-                [
-                  "5",
-                  "table",
-                  "productlines",
-                  "productlines",
-                  "46",
-                  "CREATE TABLE `productlines` (`productLine`, `textDescription`, `htmlDescription`, `image`)"
-                ],
-                [
-                  "6",
-                  "table",
-                  "products",
-                  "products",
-                  "47",
-                  "CREATE TABLE `products` (`productCode`, `productName`, `productLine`, `productScale`, `productVendor`, `productDescription`, `quantityInStock`, `buyPrice`, `MSRP`)"
-                ],
-                [
-                  "7",
-                  "table",
-                  "employees",
-                  "employees",
-                  "56",
-                  "CREATE TABLE `employees` (`employeeNumber`, `lastName`, `firstName`, `extension`, `email`, `officeCode`, `reportsTo`, `jobTitle`)"
-                ]
-              ],
-              "shape": {
-                "columns": 5,
-                "rows": 8
-              }
-            },
-            "text/html": [
-              "<div>\n",
-              "<style scoped>\n",
-              "    .dataframe tbody tr th:only-of-type {\n",
-              "        vertical-align: middle;\n",
-              "    }\n",
-              "\n",
-              "    .dataframe tbody tr th {\n",
-              "        vertical-align: top;\n",
-              "    }\n",
-              "\n",
-              "    .dataframe thead th {\n",
-              "        text-align: right;\n",
-              "    }\n",
-              "</style>\n",
-              "<table border=\"1\" class=\"dataframe\">\n",
-              "  <thead>\n",
-              "    <tr style=\"text-align: right;\">\n",
-              "      <th></th>\n",
-              "      <th>type</th>\n",
-              "      <th>name</th>\n",
-              "      <th>tbl_name</th>\n",
-              "      <th>rootpage</th>\n",
-              "      <th>sql</th>\n",
-              "    </tr>\n",
-              "  </thead>\n",
-              "  <tbody>\n",
-              "    <tr>\n",
-              "      <th>0</th>\n",
-              "      <td>table</td>\n",
-              "      <td>orderdetails</td>\n",
-              "      <td>orderdetails</td>\n",
-              "      <td>2</td>\n",
-              "      <td>CREATE TABLE `orderdetails` (`orderNumber`, `p...</td>\n",
-              "    </tr>\n",
-              "    <tr>\n",
-              "      <th>1</th>\n",
-              "      <td>table</td>\n",
-              "      <td>payments</td>\n",
-              "      <td>payments</td>\n",
-              "      <td>28</td>\n",
-              "      <td>CREATE TABLE `payments` (`customerNumber`, `ch...</td>\n",
-              "    </tr>\n",
-              "    <tr>\n",
-              "      <th>2</th>\n",
-              "      <td>table</td>\n",
-              "      <td>offices</td>\n",
-              "      <td>offices</td>\n",
-              "      <td>32</td>\n",
-              "      <td>CREATE TABLE `offices` (`officeCode`, `city`, ...</td>\n",
-              "    </tr>\n",
-              "    <tr>\n",
-              "      <th>3</th>\n",
-              "      <td>table</td>\n",
-              "      <td>customers</td>\n",
-              "      <td>customers</td>\n",
-              "      <td>33</td>\n",
-              "      <td>CREATE TABLE `customers` (`customerNumber`, `c...</td>\n",
-              "    </tr>\n",
-              "    <tr>\n",
-              "      <th>4</th>\n",
-              "      <td>table</td>\n",
-              "      <td>orders</td>\n",
-              "      <td>orders</td>\n",
-              "      <td>38</td>\n",
-              "      <td>CREATE TABLE `orders` (`orderNumber`, `orderDa...</td>\n",
-              "    </tr>\n",
-              "    <tr>\n",
-              "      <th>5</th>\n",
-              "      <td>table</td>\n",
-              "      <td>productlines</td>\n",
-              "      <td>productlines</td>\n",
-              "      <td>46</td>\n",
-              "      <td>CREATE TABLE `productlines` (`productLine`, `t...</td>\n",
-              "    </tr>\n",
-              "    <tr>\n",
-              "      <th>6</th>\n",
-              "      <td>table</td>\n",
-              "      <td>products</td>\n",
-              "      <td>products</td>\n",
-              "      <td>47</td>\n",
-              "      <td>CREATE TABLE `products` (`productCode`, `produ...</td>\n",
-              "    </tr>\n",
-              "    <tr>\n",
-              "      <th>7</th>\n",
-              "      <td>table</td>\n",
-              "      <td>employees</td>\n",
-              "      <td>employees</td>\n",
-              "      <td>56</td>\n",
-              "      <td>CREATE TABLE `employees` (`employeeNumber`, `l...</td>\n",
-              "    </tr>\n",
-              "  </tbody>\n",
-              "</table>\n",
-              "</div>"
-            ],
-            "text/plain": [
-              "    type          name      tbl_name  rootpage  \\\n",
-              "0  table  orderdetails  orderdetails         2   \n",
-              "1  table      payments      payments        28   \n",
-              "2  table       offices       offices        32   \n",
-              "3  table     customers     customers        33   \n",
-              "4  table        orders        orders        38   \n",
-              "5  table  productlines  productlines        46   \n",
-              "6  table      products      products        47   \n",
-              "7  table     employees     employees        56   \n",
-              "\n",
-              "                                                 sql  \n",
-              "0  CREATE TABLE `orderdetails` (`orderNumber`, `p...  \n",
-              "1  CREATE TABLE `payments` (`customerNumber`, `ch...  \n",
-              "2  CREATE TABLE `offices` (`officeCode`, `city`, ...  \n",
-              "3  CREATE TABLE `customers` (`customerNumber`, `c...  \n",
-              "4  CREATE TABLE `orders` (`orderNumber`, `orderDa...  \n",
-              "5  CREATE TABLE `productlines` (`productLine`, `t...  \n",
-              "6  CREATE TABLE `products` (`productCode`, `produ...  \n",
-              "7  CREATE TABLE `employees` (`employeeNumber`, `l...  "
-            ]
-          },
-          "execution_count": 40,
-          "metadata": {},
-          "output_type": "execute_result"
-        }
-      ],
-      "source": [
-        "# CodeGrade step0\n",
-        "# Run this cell without changes\n",
-        "\n",
-        "# SQL Library and Pandas Library\n",
-        "import sqlite3\n",
-        "import pandas as pd\n",
-        "\n",
-        "# Connect to the database\n",
-        "conn = sqlite3.connect('data.sqlite')\n",
-        "\n",
-        "pd.read_sql(\"\"\"SELECT * FROM sqlite_master\"\"\", conn)"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 41,
-      "metadata": {},
-      "outputs": [
-        {
-          "name": "stdout",
-          "output_type": "stream",
-          "text": [
-            "Tables in data.sqlite:\n",
-            "\n",
-            "\n",
-            "===============================\n",
-            "TABLE: orderdetails\n",
-            "===============================\n",
-            "\n",
-            "Columns:\n",
-            "(0, 'orderNumber', '', 0, None, 0)\n",
-            "(1, 'productCode', '', 0, None, 0)\n",
-            "(2, 'quantityOrdered', '', 0, None, 0)\n",
-            "(3, 'priceEach', '', 0, None, 0)\n",
-            "(4, 'orderLineNumber', '', 0, None, 0)\n",
-            "\n",
-            "Sample Rows (first 5):\n",
-            "('10100', 'S18_1749', '30', '136.00', '3')\n",
-            "('10100', 'S18_2248', '50', '55.09', '2')\n",
-            "('10100', 'S18_4409', '22', '75.46', '4')\n",
-            "('10100', 'S24_3969', '49', '35.29', '1')\n",
-            "('10101', 'S18_2325', '25', '108.06', '4')\n",
-            "\n",
-            "===============================\n",
-            "TABLE: payments\n",
-            "===============================\n",
-            "\n",
-            "Columns:\n",
-            "(0, 'customerNumber', '', 0, None, 0)\n",
-            "(1, 'checkNumber', '', 0, None, 0)\n",
-            "(2, 'paymentDate', '', 0, None, 0)\n",
-            "(3, 'amount', '', 0, None, 0)\n",
-            "\n",
-            "Sample Rows (first 5):\n",
-            "('103', 'HQ336336', '2004-10-19', '6066.78')\n",
-            "('103', 'JM555205', '2003-06-05', '14571.44')\n",
-            "('103', 'OM314933', '2004-12-18', '1676.14')\n",
-            "('112', 'BO864823', '2004-12-17', '14191.12')\n",
-            "('112', 'HQ55022', '2003-06-06', '32641.98')\n",
-            "\n",
-            "===============================\n",
-            "TABLE: offices\n",
-            "===============================\n",
-            "\n",
-            "Columns:\n",
-            "(0, 'officeCode', '', 0, None, 0)\n",
-            "(1, 'city', '', 0, None, 0)\n",
-            "(2, 'phone', '', 0, None, 0)\n",
-            "(3, 'addressLine1', '', 0, None, 0)\n",
-            "(4, 'addressLine2', '', 0, None, 0)\n",
-            "(5, 'state', '', 0, None, 0)\n",
-            "(6, 'country', '', 0, None, 0)\n",
-            "(7, 'postalCode', '', 0, None, 0)\n",
-            "(8, 'territory', '', 0, None, 0)\n",
-            "\n",
-            "Sample Rows (first 5):\n",
-            "('1', 'San Francisco', '+1 650 219 4782', '100 Market Street', 'Suite 300', 'CA', 'USA', '94080', 'NA')\n",
-            "('2', 'Boston', '+1 215 837 0825', '1550 Court Place', 'Suite 102', 'MA', 'USA', '02107', 'NA')\n",
-            "('3', 'NYC', '+1 212 555 3000', '523 East 53rd Street', 'apt. 5A', 'NY', 'USA', '10022', 'NA')\n",
-            "('4', 'Paris', '+33 14 723 4404', \"43 Rue Jouffroy D'abbans\", '', '', 'France', '75017', 'EMEA')\n",
-            "('5', 'Tokyo', '+81 33 224 5000', '4-1 Kioicho', '', 'Chiyoda-Ku', 'Japan', '102-8578', 'Japan')\n",
-            "\n",
-            "===============================\n",
-            "TABLE: customers\n",
-            "===============================\n",
-            "\n",
-            "Columns:\n",
-            "(0, 'customerNumber', '', 0, None, 0)\n",
-            "(1, 'customerName', '', 0, None, 0)\n",
-            "(2, 'contactLastName', '', 0, None, 0)\n",
-            "(3, 'contactFirstName', '', 0, None, 0)\n",
-            "(4, 'phone', '', 0, None, 0)\n",
-            "(5, 'addressLine1', '', 0, None, 0)\n",
-            "(6, 'addressLine2', '', 0, None, 0)\n",
-            "(7, 'city', '', 0, None, 0)\n",
-            "(8, 'state', '', 0, None, 0)\n",
-            "(9, 'postalCode', '', 0, None, 0)\n",
-            "(10, 'country', '', 0, None, 0)\n",
-            "(11, 'salesRepEmployeeNumber', '', 0, None, 0)\n",
-            "(12, 'creditLimit', '', 0, None, 0)\n",
-            "\n",
-            "Sample Rows (first 5):\n",
-            "('103', 'Atelier graphique', 'Schmitt', 'Carine ', '40.32.2555', '54, rue Royale', '', 'Nantes', '', '44000', 'France', '1370', '21000.00')\n",
-            "('112', 'Signal Gift Stores', 'King', 'Jean', '7025551838', '8489 Strong St.', '', 'Las Vegas', 'NV', '83030', 'USA', '1166', '71800.00')\n",
-            "('114', 'Australian Collectors, Co.', 'Ferguson', 'Peter', '03 9520 4555', '636 St Kilda Road', 'Level 3', 'Melbourne', 'Victoria', '3004', 'Australia', '1611', '117300.00')\n",
-            "('119', 'La Rochelle Gifts', 'Labrune', 'Janine ', '40.67.8555', '67, rue des Cinquante Otages', '', 'Nantes', '', '44000', 'France', '1370', '118200.00')\n",
-            "('121', 'Baane Mini Imports', 'Bergulfsen', 'Jonas ', '07-98 9555', 'Erling Skakkes gate 78', '', 'Stavern', '', '4110', 'Norway', '1504', '81700.00')\n",
-            "\n",
-            "===============================\n",
-            "TABLE: orders\n",
-            "===============================\n",
-            "\n",
-            "Columns:\n",
-            "(0, 'orderNumber', '', 0, None, 0)\n",
-            "(1, 'orderDate', '', 0, None, 0)\n",
-            "(2, 'requiredDate', '', 0, None, 0)\n",
-            "(3, 'shippedDate', '', 0, None, 0)\n",
-            "(4, 'status', '', 0, None, 0)\n",
-            "(5, 'comments', '', 0, None, 0)\n",
-            "(6, 'customerNumber', '', 0, None, 0)\n",
-            "\n",
-            "Sample Rows (first 5):\n",
-            "('10100', '2003-01-06', '2003-01-13', '2003-01-10', 'Shipped', '', '363')\n",
-            "('10101', '2003-01-09', '2003-01-18', '2003-01-11', 'Shipped', 'Check on availability.', '128')\n",
-            "('10102', '2003-01-10', '2003-01-18', '2003-01-14', 'Shipped', '', '181')\n",
-            "('10103', '2003-01-29', '2003-02-07', '2003-02-02', 'Shipped', '', '121')\n",
-            "('10104', '2003-01-31', '2003-02-09', '2003-02-01', 'Shipped', '', '141')\n",
-            "\n",
-            "===============================\n",
-            "TABLE: productlines\n",
-            "===============================\n",
-            "\n",
-            "Columns:\n",
-            "(0, 'productLine', '', 0, None, 0)\n",
-            "(1, 'textDescription', '', 0, None, 0)\n",
-            "(2, 'htmlDescription', '', 0, None, 0)\n",
-            "(3, 'image', '', 0, None, 0)\n",
-            "\n",
-            "Sample Rows (first 5):\n",
-            "('Classic Cars', 'Attention car enthusiasts: Make your wildest car ownership dreams come true. Whether you are looking for classic muscle cars, dream sports cars or movie-inspired miniatures, you will find great choices in this category. These replicas feature superb attention to detail and craftsmanship and offer features such as working steering system, opening forward compartment, opening rear trunk with removable spare wheel, 4-wheel independent spring suspension, and so on. The models range in size from 1:10 to 1:24 scale and include numerous limited edition and several out-of-production vehicles. All models include a certificate of authenticity from their manufacturers and come fully assembled and ready for display in the home or office.', '', '')\n",
-            "('Motorcycles', 'Our motorcycles are state of the art replicas of classic as well as contemporary motorcycle legends such as Harley Davidson, Ducati and Vespa. Models contain stunning details such as official logos, rotating wheels, working kickstand, front suspension, gear-shift lever, footbrake lever, and drive chain. Materials used include diecast and plastic. The models range in size from 1:10 to 1:50 scale and include numerous limited edition and several out-of-production vehicles. All models come fully assembled and ready for display in the home or office. Most include a certificate of authenticity.', '', '')\n",
-            "('Planes', 'Unique, diecast airplane and helicopter replicas suitable for collections, as well as home, office or classroom decorations. Models contain stunning details such as official logos and insignias, rotating jet engines and propellers, retractable wheels, and so on. Most come fully assembled and with a certificate of authenticity from their manufacturers.', '', '')\n",
-            "('Ships', 'The perfect holiday or anniversary gift for executives, clients, friends, and family. These handcrafted model ships are unique, stunning works of art that will be treasured for generations! They come fully assembled and ready for display in the home or office. We guarantee the highest quality, and best value.', '', '')\n",
-            "('Trains', \"Model trains are a rewarding hobby for enthusiasts of all ages. Whether you're looking for collectible wooden trains, electric streetcars or locomotives, you'll find a number of great choices for any budget within this category. The interactive aspect of trains makes toy trains perfect for young children. The wooden train sets are ideal for children under the age of 5.\", '', '')\n",
-            "\n",
-            "===============================\n",
-            "TABLE: products\n",
-            "===============================\n",
-            "\n",
-            "Columns:\n",
-            "(0, 'productCode', '', 0, None, 0)\n",
-            "(1, 'productName', '', 0, None, 0)\n",
-            "(2, 'productLine', '', 0, None, 0)\n",
-            "(3, 'productScale', '', 0, None, 0)\n",
-            "(4, 'productVendor', '', 0, None, 0)\n",
-            "(5, 'productDescription', '', 0, None, 0)\n",
-            "(6, 'quantityInStock', '', 0, None, 0)\n",
-            "(7, 'buyPrice', '', 0, None, 0)\n",
-            "(8, 'MSRP', '', 0, None, 0)\n",
-            "\n",
-            "Sample Rows (first 5):\n",
-            "('S10_1678', '1969 Harley Davidson Ultimate Chopper', 'Motorcycles', '1:10', 'Min Lin Diecast', 'This replica features working kickstand, front suspension, gear-shift lever, footbrake lever, drive chain, wheels and steering. All parts are particularly delicate due to their precise scale and require special care and attention.', '7933', '48.81', '95.70')\n",
-            "('S10_1949', '1952 Alpine Renault 1300', 'Classic Cars', '1:10', 'Classic Metal Creations', 'Turnable front wheels; steering function; detailed interior; detailed engine; opening hood; opening trunk; opening doors; and detailed chassis.', '7305', '98.58', '214.30')\n",
-            "('S10_2016', '1996 Moto Guzzi 1100i', 'Motorcycles', '1:10', 'Highway 66 Mini Classics', 'Official Moto Guzzi logos and insignias, saddle bags located on side of motorcycle, detailed engine, working steering, working suspension, two leather seats, luggage rack, dual exhaust pipes, small saddle bag located on handle bars, two-tone paint with chrome accents, superior die-cast detail , rotating wheels , working kick stand, diecast metal with plastic parts and baked enamel finish.', '6625', '68.99', '118.94')\n",
-            "('S10_4698', '2003 Harley-Davidson Eagle Drag Bike', 'Motorcycles', '1:10', 'Red Start Diecast', 'Model features, official Harley Davidson logos and insignias, detachable rear wheelie bar, heavy diecast metal with resin parts, authentic multi-color tampo-printed graphics, separate engine drive belts, free-turning front fork, rotating tires and rear racing slick, certificate of authenticity, detailed engine, display stand\\n, precision diecast replica, baked enamel finish, 1:10 scale model, removable fender, seat and tank cover piece for displaying the superior detail of the v-twin engine', '5582', '91.02', '193.66')\n",
-            "('S10_4757', '1972 Alfa Romeo GTA', 'Classic Cars', '1:10', 'Motor City Art Classics', 'Features include: Turnable front wheels; steering function; detailed interior; detailed engine; opening hood; opening trunk; opening doors; and detailed chassis.', '3252', '85.68', '136.00')\n",
-            "\n",
-            "===============================\n",
-            "TABLE: employees\n",
-            "===============================\n",
-            "\n",
-            "Columns:\n",
-            "(0, 'employeeNumber', '', 0, None, 0)\n",
-            "(1, 'lastName', '', 0, None, 0)\n",
-            "(2, 'firstName', '', 0, None, 0)\n",
-            "(3, 'extension', '', 0, None, 0)\n",
-            "(4, 'email', '', 0, None, 0)\n",
-            "(5, 'officeCode', '', 0, None, 0)\n",
-            "(6, 'reportsTo', '', 0, None, 0)\n",
-            "(7, 'jobTitle', '', 0, None, 0)\n",
-            "\n",
-            "Sample Rows (first 5):\n",
-            "('1002', 'Murphy', 'Diane', 'x5800', 'dmurphy@classicmodelcars.com', '1', '', 'President')\n",
-            "('1056', 'Patterson', 'Mary', 'x4611', 'mpatterso@classicmodelcars.com', '1', '1002', 'VP Sales')\n",
-            "('1076', 'Firrelli', 'Jeff', 'x9273', 'jfirrelli@classicmodelcars.com', '1', '1002', 'VP Marketing')\n",
-            "('1088', 'Patterson', 'William', 'x4871', 'wpatterson@classicmodelcars.com', '6', '1056', 'Sales Manager (APAC)')\n",
-            "('1102', 'Bondur', 'Gerard', 'x5408', 'gbondur@classicmodelcars.com', '4', '1056', 'Sale Manager (EMEA)')\n"
-          ]
-        }
-      ],
-      "source": [
-        "import sqlite3\n",
-        "\n",
-        "# Connect to the database\n",
-        "con = sqlite3.connect(\"data.sqlite\")\n",
-        "cur = con.cursor()\n",
-        "\n",
-        "# Get all table names\n",
-        "cur.execute(\"SELECT name FROM sqlite_master WHERE type='table';\")\n",
-        "tables = cur.fetchall()\n",
-        "\n",
-        "print(\"Tables in data.sqlite:\\n\")\n",
-        "\n",
-        "# Loop through each table and show columns + sample rows\n",
-        "for table in tables:\n",
-        "    table_name = table[0]\n",
-        "    print(\"\\n===============================\")\n",
-        "    print(\"TABLE:\", table_name)\n",
-        "    print(\"===============================\")\n",
-        "\n",
-        "    # Show columns\n",
-        "    cur.execute(f\"PRAGMA table_info({table_name});\")\n",
-        "    columns = cur.fetchall()\n",
-        "\n",
-        "    print(\"\\nColumns:\")\n",
-        "    for col in columns:\n",
-        "        print(col)\n",
-        "\n",
-        "    # Show sample rows\n",
-        "    cur.execute(f\"SELECT * FROM {table_name} LIMIT 5;\")\n",
-        "    rows = cur.fetchall()\n",
-        "\n",
-        "    print(\"\\nSample Rows (first 5):\")\n",
-        "    for row in rows:\n",
-        "        print(row)\n",
-        "\n",
-        "con.close()"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {},
-      "source": [
-        "## Part 1: Join and Filter"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {
-        "id": "RgXBvTg5Dj4g"
-      },
-      "source": [
-        "### Step 1\n",
-        "\n",
-        "The company would like to let Boston employees go remote but need to know more information about who is working in that office. Return the first and last names and the job titles for all employees in Boston."
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 42,
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "# CodeGrade step1\n",
-        "# Replace None with your code\n",
-        "df_boston = pd.read_sql(\"\"\"\n",
-        "SELECT e.firstName,\n",
-        "       e.lastName,\n",
-        "       e.jobTitle\n",
-        "FROM employees e\n",
-        "JOIN offices o\n",
-        "ON e.officeCode = o.officeCode\n",
-        "WHERE o.city = 'Boston';\n",
-        "\"\"\", conn)"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {
-        "id": "HFg4zZz3DwsT"
-      },
-      "source": [
-        "### Step 2\n",
-        "\n",
-        "Recent downsizing and employee attrition have caused some mixups in office tracking and the company is worried they are supporting a 'ghost' location. Are there any offices that have zero employees?"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 43,
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "# CodeGrade step2\n",
-        "# Replace None with your code\n",
-        "df_zero_emp = pd.read_sql(\"\"\"\n",
-        "SELECT o.officeCode,\n",
-        "       o.city,\n",
-        "       o.country\n",
-        "FROM offices o\n",
-        "LEFT JOIN employees e\n",
-        "ON o.officeCode = e.officeCode\n",
-        "WHERE e.employeeNumber IS NULL;\n",
-        "\"\"\", conn)"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {},
-      "source": [
-        "## Part 2: Type of Join"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {
-        "id": "WjQpZqZ4ERx7"
-      },
-      "source": [
-        "### Step 3\n",
-        "\n",
-        "As a part of this larger analysis project the HR department is taking the time to audit employee records to make sure nothing is out of place and have asked you to produce a report of all employees. Return the employees first name and last name along with the city and state of the office that they work out of (if they have one). Include all employees and order them by their first name, then their last name."
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 44,
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "# CodeGrade step3\n",
-        "# Replace None with your code\n",
-        "df_employee = pd.read_sql(\"\"\"\n",
-        "SELECT e.firstName,\n",
-        "       e.lastName,\n",
-        "       o.city,\n",
-        "       o.state\n",
-        "FROM employees e\n",
-        "LEFT JOIN offices o\n",
-        "ON e.officeCode = o.officeCode\n",
-        "ORDER BY e.firstName, e.lastName;\n",
-        "\"\"\", conn)"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {
-        "id": "VwT9eePzEl8I"
-      },
-      "source": [
-        "### Step 4\n",
-        "The customer management and sales rep team know that they have several 'customers' in the system that have not placed any orders. They want to reach out to these customers with updated product catalogs to try and get them to place initial orders. Return all of the customer's contact information (first name, last name, and phone number) as well as their sales rep's employee number for any customer that has not placed an order. Sort the results alphabetically based on the contact's last name\n",
-        "\n",
-        "There are several approaches you could take here, including a left join and filtering on null values or using a subquery to filter out customers who do have orders. In total there are 24 customers who have not placed an order."
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 45,
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "# CodeGrade step4\n",
-        "# Replace None with your code\n",
-        "df_contacts = pd.read_sql(\"\"\"\n",
-        "SELECT c.contactFirstName,\n",
-        "       c.contactLastName,\n",
-        "       c.phone,\n",
-        "       c.salesRepEmployeeNumber\n",
-        "FROM customers c\n",
-        "LEFT JOIN orders o\n",
-        "ON c.customerNumber = o.customerNumber\n",
-        "WHERE o.customerNumber IS NULL\n",
-        "ORDER BY c.contactLastName;\n",
-        "\"\"\", conn)"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {},
-      "source": [
-        "## Part 3: Built-in Function"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {
-        "id": "YSiD-VGsE3tt"
-      },
-      "source": [
-        "### Step 5\n",
-        "\n",
-        "The accounting team is auditing their figures and wants to make sure all customer payments are in alignment, they have asked you to produce a report of all the customer contacts (first and last names) along with details for each of the customers' payment amounts and date of payment. They have asked that these results be sorted in descending order by the payment amount.\n",
-        "\n",
-        "Hint: A member of their team mentioned that they are not sure the 'amount' column is being stored as the right datatype so keep this in mind when sorting."
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 46,
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "# CodeGrade step5\n",
-        "# Replace None with your code\n",
-        "df_payment = pd.read_sql(\"\"\"\n",
-        "SELECT c.contactFirstName,\n",
-        "       c.contactLastName,\n",
-        "       p.amount,\n",
-        "       p.paymentDate\n",
-        "FROM customers c\n",
-        "JOIN payments p\n",
-        "ON c.customerNumber = p.customerNumber\n",
-        "ORDER BY CAST(p.amount AS REAL) DESC;\n",
-        "\"\"\", conn)"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {},
-      "source": [
-        "## Part 4: Joining and Grouping"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {},
-      "source": [
-        "### Step 6\n",
-        "\n",
-        "The sales rep team has noticed several key team members that stand out as having trustworthy business relations with their customers, reflected by high credit limits indicating more potential for orders. The team wants you to identify these 4 individuals. Return the employee number, first name, last name, and number of customers for employees whose customers have an average credit limit over 90k. Sort by number of customers from high to low."
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 47,
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "# CodeGrade step6\n",
-        "# Replace None with your code\n",
-        "df_credit = pd.read_sql(\"\"\"\n",
-        "SELECT e.employeeNumber,\n",
-        "       e.firstName,\n",
-        "       e.lastName,\n",
-        "       COUNT(c.customerNumber) AS num_customers\n",
-        "FROM employees e\n",
-        "JOIN customers c\n",
-        "ON e.employeeNumber = c.salesRepEmployeeNumber\n",
-        "GROUP BY e.employeeNumber, e.firstName, e.lastName\n",
-        "HAVING AVG(c.creditLimit) > 90000\n",
-        "ORDER BY num_customers DESC\n",
-        "LIMIT 4;\n",
-        "\"\"\", conn)"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {
-        "id": "oBc9ymJOFB7k"
-      },
-      "source": [
-        "### Step 7\n",
-        "\n",
-        "The product team is looking to create new model kits and wants to know which current products are selling the most in order to get an idea of what is popular. Return the product name and count the number of orders for each product as a column named 'numorders'. Also return a new column, 'totalunits', that sums up the total quantity of product sold (use the quantityOrdered column). Sort the results by the totalunits column, highest to lowest, to showcase the top selling products."
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 48,
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "# CodeGrade step7\n",
-        "# Replace None with your code\n",
-        "df_product_sold =pd.read_sql(\"\"\"\n",
-        "SELECT p.productName,\n",
-        "       COUNT(od.orderNumber) AS numorders,\n",
-        "       SUM(CAST(od.quantityOrdered AS INTEGER)) AS totalunits\n",
-        "FROM products p\n",
-        "JOIN orderdetails od\n",
-        "ON p.productCode = od.productCode\n",
-        "GROUP BY p.productCode, p.productName\n",
-        "ORDER BY totalunits DESC;\n",
-        "\"\"\", conn)"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {},
-      "source": [
-        "## Part 5: Multiple Joins"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {
-        "id": "rC9zNmRgFeIu"
-      },
-      "source": [
-        "### Step 8\n",
-        "\n",
-        "As a follow-up to the above question, the product team also wants to know how many different customers ordered each product to get an idea of market reach. Return the product name, code, and the total number of customers who have ordered each product, aliased as 'numpurchasers'. Sort the results by the highest  number of purchasers.\n",
-        "\n",
-        "Hint: You might need to join more than 2 tables. Use DISTINCT to return unique/different values."
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 49,
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "# CodeGrade step8\n",
-        "# Replace None with your code\n",
-        "df_total_customers =pd.read_sql(\"\"\"\n",
-        "SELECT p.productName,\n",
-        "       p.productCode,\n",
-        "       COUNT(DISTINCT o.customerNumber) AS numpurchasers\n",
-        "FROM products p\n",
-        "JOIN orderdetails od\n",
-        "ON p.productCode = od.productCode\n",
-        "JOIN orders o\n",
-        "ON od.orderNumber = o.orderNumber\n",
-        "GROUP BY p.productCode, p.productName\n",
-        "ORDER BY numpurchasers DESC;\n",
-        "\"\"\", conn)"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {},
-      "source": [
-        "### Step 9\n",
-        "\n",
-        "The custom relations team is worried they are not staffing locations properly to account for customer volume. They want to know how many customers there are per office. Return the count as a column named 'n_customers'. Also return the office code and city."
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 50,
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "# CodeGrade step9\n",
-        "# Replace None with your code\n",
-        "df_customers = pd.read_sql(\"\"\"\n",
-        "SELECT o.officeCode,\n",
-        "       o.city,\n",
-        "       COUNT(c.customerNumber) AS n_customers\n",
-        "FROM offices o\n",
-        "JOIN employees e\n",
-        "ON o.officeCode = e.officeCode\n",
-        "JOIN customers c\n",
-        "ON e.employeeNumber = c.salesRepEmployeeNumber\n",
-        "GROUP BY o.officeCode, o.city\n",
-        "ORDER BY n_customers DESC;\n",
-        "\"\"\", conn)"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {},
-      "source": [
-        "## Part 6: Subquery"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {
-        "id": "If3Bste-Fulo"
-      },
-      "source": [
-        "### Step 10\n",
-        "\n",
-        "Having looked at the results from above, the product team is curious to dig into the underperforming products. They want to ask members of the team who have sold these products about what kind of messaging was successful in getting a customer to buy these specific products. Using a subquery or common table expression (CTE), select the employee number, first name, last name, city of the office, and the office code for employees who sold products that have been ordered by fewer than 20 customers.\n",
-        "\n",
-        "Hint: Start with the subquery, find all the products that have been ordered by 19 or less customers, consider adapting one of your previous queries."
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 51,
-      "metadata": {},
-      "outputs": [],
-      "source": [
-        "# CodeGrade step10\n",
-        "# Replace None with your code\n",
-        "df_under_20 = pd.read_sql(\"\"\"\n",
-        "WITH low_demand_products AS (\n",
-        "    SELECT od.productCode\n",
-        "    FROM orderdetails od\n",
-        "    JOIN orders o\n",
-        "    ON od.orderNumber = o.orderNumber\n",
-        "    GROUP BY od.productCode\n",
-        "    HAVING COUNT(DISTINCT o.customerNumber) < 20\n",
-        ")\n",
-        "\n",
-        "SELECT DISTINCT e.employeeNumber,\n",
-        "       e.firstName,\n",
-        "       e.lastName,\n",
-        "       o.city,\n",
-        "       o.officeCode\n",
-        "FROM employees e\n",
-        "JOIN offices o\n",
-        "ON e.officeCode = o.officeCode\n",
-        "JOIN customers c\n",
-        "ON e.employeeNumber = c.salesRepEmployeeNumber\n",
-        "JOIN orders ord\n",
-        "ON c.customerNumber = ord.customerNumber\n",
-        "JOIN orderdetails od\n",
-        "ON ord.orderNumber = od.orderNumber\n",
-        "WHERE od.productCode IN (SELECT productCode FROM low_demand_products);\n",
-        "\"\"\", conn)"
-      ]
-    },
-    {
-      "cell_type": "markdown",
-      "metadata": {
-        "id": "b0YHiqxXGa-5"
-      },
-      "source": [
-        "### Close the connection"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 52,
-      "metadata": {
-        "id": "oEcx2cZ2Gc21"
-      },
-      "outputs": [],
-      "source": [
-        "# Run this cell without changes\n",
-        "\n",
-        "conn.close()"
-      ]
-    }
-  ],
-  "metadata": {
-    "colab": {
-      "provenance": []
-    },
-    "kernelspec": {
-      "display_name": "win_c0c1",
-      "language": "python",
-      "name": "python3"
-    },
-    "language_info": {
-      "codemirror_mode": {
-        "name": "ipython",
-        "version": 3
-      },
-      "file_extension": ".py",
-      "mimetype": "text/x-python",
-      "name": "python",
-      "nbconvert_exporter": "python",
-      "pygments_lexer": "ipython3",
-      "version": "3.12.4"
-    }
-  },
-  "nbformat": 4,
-  "nbformat_minor": 0
-}
+#!/usr/bin/env python
+# coding: utf-8
+
+# ## Introduction
+# 
+# In this lab assessment, you'll practice your knowledge of JOIN statements and subqueries, using various types of joins and various methods for specifying the links between them. One of the main benefits of using a relational database is the table relations that define them which allow you to access and connect data together via shared columns. By writing more advanced SQL queries that utilize joins and subqueries you can provide a deeper and more granular level of analysis and data retrieval.
+# 
+# This assessment will continue looking at the familiar Northwind database that contains customer relationship management (CRM) data as well as employee and product data. You will take a deeper dive into this database in order to accomplish more advanced SQL queries that require you to access data from multiple tables at once. 
+# 
+# Imagine that you are working in an analyst role for the sales rep team. They have collaborated with the customer relations and the product teams to take a comprehensive look at the employee to customer pipeline in an attempt to find areas of improvement and potential growth. You have been asked to provide some specific data and statistics regarding this project.
+
+# ## Learning Objectives
+# 
+# You will be able to:
+# 
+# * Write SQL queries that make use of various types of joins
+# * Choose and perform whichever type of join is best for retrieving desired data
+# * Write subqueries to decompose complex queries
+
+# ## Database
+# 
+# The database will be the customer relationship management (CRM) database, which has the following ERD.
+# 
+# ![Database-Schema.png](ERD.png)
+# 
+# ### Connect to the database
+# 
+# In the cell below we have provided the code to import both pandas and sqlite3 as well as define and create the connection to the database you will use. Also displayed is the schema and table names from the database. Use this information in conjunction with the ERD image above to assist in creating your SQL Queries.
+# 
+# Major Hint: Look for the shared columns across tables you need to 'join' together.
+
+# In[114]:
+
+
+# CodeGrade step0
+# Run this cell without changes
+
+# SQL Library and Pandas Library
+import sqlite3
+import pandas as pd
+
+# Connect to the database
+conn = sqlite3.connect('data.sqlite')
+
+pd.read_sql("""SELECT * FROM sqlite_master""", conn)
+
+
+# ## Part 1: Join and Filter
+
+# ### Step 1
+# 
+# The company would like to let Boston employees go remote but need to know more information about who is working in that office. Return the first and last names and the job titles for all employees in Boston.
+
+# In[141]:
+
+
+# CodeGrade step1
+# Replace None with your code
+df_boston = pd.read_sql("""
+                        SELECT firstName, lastName as name
+                        FROM employees
+                        WHERE officeCode = '2';""", conn)
+
+
+# ### Step 2
+# 
+# Recent downsizing and employee attrition have caused some mixups in office tracking and the company is worried they are supporting a 'ghost' location. Are there any offices that have zero employees?
+
+# In[140]:
+
+
+# CodeGrade step2
+# Replace None with your code
+df_zero_emp = pd.read_sql("""
+                          SELECT o.city, COUNT(e.officeCode) AS emp_count
+                          FROM employees e
+                          LEFT JOIN offices o
+                            ON e.officeCode = o.officeCode
+                          GROUP BY e.officeCode
+                          HAVING emp_count IS NULL;""", conn)
+
+
+# ## Part 2: Type of Join
+
+# ### Step 3
+# 
+# As a part of this larger analysis project the HR department is taking the time to audit employee records to make sure nothing is out of place and have asked you to produce a report of all employees. Return the employees first name and last name along with the city and state of the office that they work out of (if they have one). Include all employees and order them by their first name, then their last name.
+
+# In[144]:
+
+
+# CodeGrade step3
+# Replace None with your code
+df_employee = pd.read_sql("""
+                          SELECT e.firstName, e.lastName, o.city, o.state
+                          FROM employees e
+                          LEFT JOIN offices o
+                            ON e.officeCode = o.officeCode
+                          ORDER BY firstName, lastName;""", conn)
+
+
+# ### Step 4
+# The customer management and sales rep team know that they have several 'customers' in the system that have not placed any orders. They want to reach out to these customers with updated product catalogs to try and get them to place initial orders. Return all of the customer's contact information (first name, last name, and phone number) as well as their sales rep's employee number for any customer that has not placed an order. Sort the results alphabetically based on the contact's last name
+# 
+# There are several approaches you could take here, including a left join and filtering on null values or using a subquery to filter out customers who do have orders. In total there are 24 customers who have not placed an order.
+
+# In[152]:
+
+
+# CodeGrade step4
+# Replace None with your code
+df_contacts = pd.read_sql("""
+                          SELECT c.contactFirstName, c.contactLastName, c.phone, c.salesRepEmployeeNumber
+                          FROM customers c
+                          WHERE customerNumber NOT IN(
+                                SELECT customerNumber
+                                FROM orders)
+                          ORDER BY contactLastName;""", conn)
+
+
+# ## Part 3: Built-in Function
+
+# ### Step 5
+# 
+# The accounting team is auditing their figures and wants to make sure all customer payments are in alignment, they have asked you to produce a report of all the customer contacts (first and last names) along with details for each of the customers' payment amounts and date of payment. They have asked that these results be sorted in descending order by the payment amount.
+# 
+# Hint: A member of their team mentioned that they are not sure the 'amount' column is being stored as the right datatype so keep this in mind when sorting.
+
+# In[119]:
+
+
+# CodeGrade step5
+# Replace None with your code
+df_payment = pd.read_sql("""
+                         SELECT c.contactFirstName, c.contactLastName, p.amount, p.paymentDate
+                         FROM customers c
+                         JOIN payments p
+                            ON p.customerNumber = c.customerNumber
+                         ORDER BY CAST(p.amount AS INTEGER) DESC;""", conn)
+
+
+# ## Part 4: Joining and Grouping
+
+# ### Step 6
+# 
+# The sales rep team has noticed several key team members that stand out as having trustworthy business relations with their customers, reflected by high credit limits indicating more potential for orders. The team wants you to identify these 4 individuals. Return the employee number, first name, last name, and number of customers for employees whose customers have an average credit limit over 90k. Sort by number of customers from high to low.
+
+# In[120]:
+
+
+# CodeGrade step6
+# Replace None with your code
+df_credit = pd.read_sql("""
+                        SELECT e.employeeNumber, e.firstName, e.lastName,
+                        COUNT(c.customerNumber) AS customer_count
+                        FROM employees e
+                        INNER JOIN customers c
+                            ON c.salesRepEmployeeNumber = e.employeeNumber
+                        GROUP BY e.employeeNumber
+                        HAVING AVG(c.creditLimit) > 90000
+                        ORDER BY customer_count DESC;
+                        """, conn)
+df_credit
+
+
+# ### Step 7
+# 
+# The product team is looking to create new model kits and wants to know which current products are selling the most in order to get an idea of what is popular. Return the product name and count the number of orders for each product as a column named 'numorders'. Also return a new column, 'totalunits', that sums up the total quantity of product sold (use the quantityOrdered column). Sort the results by the totalunits column, highest to lowest, to showcase the top selling products.
+
+# In[121]:
+
+
+# CodeGrade step7
+# Replace None with your code
+df_product_sold = pd.read_sql("""
+                              SELECT p.productName, 
+                                    COUNT(od.productCode) AS numorders, 
+                                    SUM(od.quantityOrdered) AS totalunits
+                              FROM products p
+                              INNER JOIN orderDetails od
+                                ON p.productCode = od.productCode
+                              GROUP BY p.productName
+                              ORDER BY totalunits DESC;""", conn)
+
+
+# ## Part 5: Multiple Joins
+
+# ### Step 8
+# 
+# As a follow-up to the above question, the product team also wants to know how many different customers ordered each product to get an idea of market reach. Return the product name, code, and the total number of customers who have ordered each product, aliased as 'numpurchasers'. Sort the results by the highest  number of purchasers.
+# 
+# Hint: You might need to join more than 2 tables. Use DISTINCT to return unique/different values.
+
+# In[122]:
+
+
+# CodeGrade step8
+# Replace None with your code
+df_total_customers = pd.read_sql("""SELECT p.productName, p.productCode, COUNT(DISTINCT(o.customerNumber)) AS numpurchasers
+                                    FROM products p
+                                    JOIN orderDetails od
+                                        ON od.productCode = p.productCode
+                                    JOIN orders o
+                                        ON o.orderNumber = od.orderNumber
+                                    GROUP BY p.productCode
+                                    ORDER BY numpurchasers DESC;
+                                 """, conn)
+
+
+# ### Step 9
+# 
+# The custom relations team is worried they are not staffing locations properly to account for customer volume. They want to know how many customers there are per office. Return the count as a column named 'n_customers'. Also return the office code and city.
+
+# In[123]:
+
+
+# CodeGrade step9
+# Replace None with your code
+df_customers = pd.read_sql("""SELECT o.officeCode, o.city, COUNT(c.customerNumber) as n_customers
+                              FROM offices o
+                              LEFT JOIN employees e
+                                ON e.officeCode = o.officeCode
+                              LEFT JOIN customers c
+                                ON c.salesRepEmployeeNumber = e.employeeNumber
+                              GROUP BY o.officeCode;""", conn)
+
+
+# ## Part 6: Subquery
+
+# ### Step 10
+# 
+# Having looked at the results from above, the product team is curious to dig into the underperforming products. They want to ask members of the team who have sold these products about what kind of messaging was successful in getting a customer to buy these specific products. Using a subquery or common table expression (CTE), select the employee number, first name, last name, city of the office, and the office code for employees who sold products that have been ordered by fewer than 20 customers.
+# 
+# Hint: Start with the subquery, find all the products that have been ordered by 19 or less customers, consider adapting one of your previous queries.
+
+# In[160]:
+
+
+# CodeGrade step10
+# Replace None with your code
+df_under_20 = pd.read_sql("""WITH underperforming AS (
+                            SELECT od.productCode
+                            FROM orderDetails od
+                            JOIN orders o 
+                                ON o.orderNumber = od.orderNumber
+                            GROUP BY od.productCode
+                            HAVING COUNT(DISTINCT o.customerNumber) < 20
+                          )
+                          SELECT DISTINCT
+                            e.employeeNumber, e.firstName, e.lastName,
+                            o.city, o.officeCode
+                          FROM employees e
+                          JOIN offices o
+                            ON o.officeCode = e.officeCode
+                          JOIN customers c ON
+                            c.salesRepEmployeeNumber = e.employeeNumber
+                          JOIN orders o ON
+                            o.customerNumber = c.customerNumber
+                          JOIN orderDetails od ON
+                            od.orderNumber = o.ordernumber
+                          WHERE od.productCode IN (
+                                SELECT productCode FROM underperforming)
+                          ORDER BY e.lastName;
+                          """, conn)
+
+
+# ### Close the connection
+
+# In[112]:
+
+
+# Run this cell without changes
+
+conn.close()
+
